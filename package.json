@@ -1,0 +1,11 @@
+{
+  "name": "rbfs",
+  "version": "0.0.1",
+  "description": "rapid's blog from scratch",
+  "author": "rapidhere@gmail.com",
+  "license": "LGPL-3.0",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-typescript": "^2.13.6"
+  }
+}
