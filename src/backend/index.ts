@@ -5,6 +5,10 @@
  */
 'use strict';
 
-import server = require('./server/server');
+import server from './http/server';
+import { discover } from './http/router';
+
+// find resources
+discover();
 
 server.listen(4040);
