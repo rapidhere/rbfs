@@ -5,6 +5,7 @@
  */
 import * as exception from '../core/exception';
 import { Request, Response } from './context';
+import * as logger from '../core/log';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -25,13 +26,17 @@ interface ResourceLocator {
 export abstract class ResourceBase {
   protected request: Request;
   protected response: Response;
+  protected log: logger.Logger;
 
   constructor(req: Request, res: Response) {
     this.request = req;
     this.response = res;
+    this.log = logger.default;
   }
 
   * invoke(action: ResourceAction) {
+    this.log.info(`[${this.request.method} ${this.request.uri}]`);
+    
     switch(action) {
       case ResourceAction.GET: yield * this.get();
       case ResourceAction.POST: yield * this.post();

@@ -12,3 +12,8 @@ import { discover } from './http/router';
 discover();
 
 server.listen(4040);
+
+// wait for SIGTERM to kill
+process.on('SIGTERM', () => {
+  process.exit(0);
+});

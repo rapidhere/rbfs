@@ -5,7 +5,12 @@
   "author": "rapidhere@gmail.com",
   "license": "LGPL-3.0",
   "devDependencies": {
+    "del": "^2.2.1",
     "gulp": "^3.9.1",
-    "gulp-typescript": "^2.13.6"
+    "gulp-typescript": "^2.13.6",
+    "gulp-watch": "^4.3.9"
+  },
+  "dependencies": {
+    "dateformat": "^1.0.12"
   }
 }
