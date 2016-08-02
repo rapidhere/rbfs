@@ -33,5 +33,5 @@ export default {
 
 function __log(category: string, message: string): void {
   let timeString = dateFormat(new Date(), 'yyyy-mm-dd HH:MM:ss.l');
-  console.log(`[${timeString}] [${category}] [${message}]`);
+  console.log(`[${timeString}] [${category}] ${message}`);
 }

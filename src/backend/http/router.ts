@@ -35,13 +35,13 @@ export abstract class ResourceBase {
   }
 
   * invoke(action: ResourceAction) {
-    this.log.info(`[${this.request.method} ${this.request.uri}]`);
+    this.log.info(`[${this.request.method} ${this.request.rawRequest.url}]`);
     
     switch(action) {
-      case ResourceAction.GET: yield * this.get();
-      case ResourceAction.POST: yield * this.post();
-      case ResourceAction.PUT: yield * this.put();
-      case ResourceAction.DELETE: yield * this.delete();
+      case ResourceAction.GET: yield * this.get(); break;
+      case ResourceAction.POST: yield * this.post(); break;
+      case ResourceAction.PUT: yield * this.put(); break;
+      case ResourceAction.DELETE: yield * this.delete(); break;
     }
   }
 

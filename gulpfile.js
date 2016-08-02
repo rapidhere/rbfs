@@ -57,7 +57,7 @@ function startServer() {
 }
 
 function logServerOutput(data) {
-  console.log(data.toString());
+  fs.write(1, data.toString());
 }
 
 function clean() {
