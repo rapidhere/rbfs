@@ -8,26 +8,35 @@ export class RbfsException extends Error {
 
 }
 
-export class RbfsHttpException extends Error {
-  protected _code: number;
+export class RbfsRuntimeError extends RbfsException {
+  protected _errorCode: number;
+  protected _errorMessage: string;
+  protected _statusCode: number = 200;
 
-  constructor(code: number) {
-    super("Http Error: " + code);
+  get errorCode() { return this._errorCode; }
+  get errorMessage() { return this._errorMessage; }
+  get statusCode() { return this._statusCode; }
+}
 
-    this._code = code;
+//~ Common Http Errors
+export class RbfsHttpException extends RbfsRuntimeError {
+  constructor(code: number, message: string) {
+    super();
+
+    this._errorCode = -code;
+    this._errorMessage = message;
+    this._statusCode = code;
   }
-
-  get code() { return this._code; }
 }
 
 export class MethodNotAllowed extends RbfsHttpException {
   constructor() {
-    super(405);
+    super(405, "Method Not Allowed");
   }
 }
 
 export class NotFound extends RbfsHttpException {
   constructor() {
-    super(404);
+    super(404, "Not Found");
   }
 }

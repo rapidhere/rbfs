@@ -15,9 +15,9 @@ interface RoInvoker extends Function {
 }
 
 // The ro function
-export let ro = function(invoker: RoInvoker, target: any = null, initValue?: any): void {
+export let ro = function(invoker: RoInvoker, target: any = null): void {
   let generator: RoInvokerResult = invoker.apply(target);
-  invoke(initValue);
+  invoke(undefined);
 
   function invoke(argument: any) {
     next(generator.next(argument));
@@ -35,7 +35,7 @@ export let ro = function(invoker: RoInvoker, target: any = null, initValue?: any
         .then(invoke)
         .catch((err) => next(generator.throw(err)));
     } else {
-      setTimeout(() => invoke(result), 0);
+      invoke(result);
     }
   }
 };

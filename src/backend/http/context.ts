@@ -6,6 +6,7 @@
 import * as http from 'http';
 import * as url from 'url';
 import { ResourceAction } from './router';
+import log from '../core/log';
 
 export class Request {
   private _rawRequest: http.IncomingMessage;
@@ -57,6 +58,42 @@ export class Response {
 
   constructor(rawResponse: http.ServerResponse) {
     this._rawResponse = rawResponse;
+  }
+
+  status(statusCode: number) {
+    this.rawResponse.statusCode = statusCode;
+    return this;
+  }
+
+  * json(obj: Object) {
+    yield* Response.makeResponse(this.rawResponse, this.rawResponse.statusCode, obj);
+  }
+
+  static * makeResponse(rawResponse: http.ServerResponse, statusCode: number, obj: Object) {
+    return new Promise((resolve, reject) => {
+      rawResponse.statusCode = statusCode;
+      rawResponse.setHeader("Content-Type", "application/json");
+      rawResponse.end(JSON.stringify(obj), (err) => {
+        if(err) {
+          reject(err);
+        } else {
+          resolve(true);
+        }
+      });
+    });
+  }
+
+  static * responseError(rawResponse: http.ServerResponse, statusCode: number, errorCode: number, errorMessage: string) {
+    yield* Response.makeResponse(
+      rawResponse,
+      statusCode,
+      {
+        "error": {
+          "code": errorCode,
+          "message": errorMessage
+        }
+      }
+    );
   }
 
   get rawResponse() { return this._rawResponse; }
