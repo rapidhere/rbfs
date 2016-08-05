@@ -6,15 +6,16 @@ const fs = require('fs');
 const spawn = require('child_process').spawn;
 const del = require('del');
 
-gulp.task('compile', compile);
-gulp.task('build', ['compile'], copy);
+gulp.task('build-ts', compile);
+gulp.task('build-static', copy);
+gulp.task('build-mysql', ['build-ts'], buildMysql);
 gulp.task('stop-server', stopServer);
-gulp.task('start-server', ['build'], startServer);
-gulp.task('restart-server', ['stop-server', 'build'], startServer);
+gulp.task('start-server', ['build-ts', 'build-static'], startServer);
+gulp.task('restart-server', ['stop-server', 'build-ts', 'build-static'], startServer);
 gulp.task('clean', clean);
 
 gulp.task('watch', ['start-server'], () => {
-  gulp.watch('src/**/*', ['restart-server']);
+  gulp.watch(['src/**/*', '!src/backend/dao/mysql/**/*'], ['restart-server']);
 });
 
 function compile() {
@@ -46,8 +47,8 @@ function stopServer(cb) {
 function startServer() {
   const serverProcess = spawn('node', [SERVER_INDEX_PATH]);
   fs.writeFile(PID_FILE_PATH, serverProcess.pid);
-  serverProcess.stdout.on('data', logServerOutput);
-  serverProcess.stderr.on('data', logServerOutput);
+  serverProcess.stdout.on('data', writeOutput);
+  serverProcess.stderr.on('data', writeOutput);
   serverProcess.on('close', (code) => {
     console.error(`# server exited with code ${code}`);
   });
@@ -56,10 +57,64 @@ function startServer() {
   });
 }
 
-function logServerOutput(data) {
+function writeOutput(data) {
+  // TODO: 支持gbk
   fs.write(1, data.toString());
 }
 
 function clean() {
   del('dist', '.pid');
+}
+
+const MYSQL_BUILD_PATH = path.join(__dirname, 'dist', 'backend', 'dao', 'mysql')
+const MYSQL_SOURCE_PATH = path.join(__dirname, 'src', 'backend', 'dao', 'mysql')
+
+function buildMysql(cb) {
+  gulp.src([path.join(MYSQL_SOURCE_PATH, "**", "*"), "!" + path.join(MYSQL_SOURCE_PATH, "**", "*.ts")])
+    .pipe(gulp.dest(MYSQL_BUILD_PATH))
+    .on('end', configure);
+
+  function configure() {
+    console.log('running node-gyp configure ...');
+
+    const gyp = spawn('node-gyp', [
+      '-C',
+      MYSQL_BUILD_PATH,
+      'configure',
+      '--msvs_version=2015'
+    ], {
+      'shell': true});
+
+    gyp.stderr.on('data', writeOutput);
+    gyp.stdout.on('data', writeOutput);
+    gyp.on('close', function(code) {
+      if(code != 0) {
+        cb('exit with ' + code);
+        return ;
+      }
+      build();
+    });
+  }
+
+  function build() {
+    console.log('running node-gyp build ...');
+
+    const gyp = spawn('node-gyp', [
+      '-C',
+      MYSQL_BUILD_PATH,
+      'build',
+      '--msvs_version=2015'
+    ], {
+      'shell': true});
+
+    gyp.stderr.on('data', writeOutput);
+    gyp.stdout.on('data', writeOutput);
+    gyp.on('close', function(code) {
+      if(code != 0) {
+        cb('exit with ' + code);
+        return ;
+      }
+      cb();
+    });
+}
 }
