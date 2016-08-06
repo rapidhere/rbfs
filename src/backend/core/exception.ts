@@ -8,6 +8,14 @@ export class RbfsException extends Error {
 
 }
 
+export class RbfsDatabaseException extends RbfsException {
+
+}
+
+export class DatabaseConnectionException extends RbfsDatabaseException {
+
+}
+
 export class RbfsRuntimeError extends RbfsException {
   protected _errorCode: number;
   protected _errorMessage: string;

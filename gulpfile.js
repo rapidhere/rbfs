@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const spawn = require('child_process').spawn;
 const del = require('del');
+const minimist = require('minimist');
 
 gulp.task('build-ts', compile);
 gulp.task('build-static', copy);
@@ -17,6 +18,19 @@ gulp.task('clean', clean);
 gulp.task('watch', ['start-server'], () => {
   gulp.watch(['src/**/*', '!src/backend/dao/mysql/**/*'], ['restart-server']);
 });
+
+// get options
+let optionSettings = {
+  string: ['mysql_home', 'msvs_version'],
+
+  default: {
+    'mysql_home': 'no_path',
+    'msvs_version': '2015'
+  }
+};
+let options = minimist(process.argv.slice(2), optionSettings);
+
+// tasks
 
 function compile() {
   return tsProject
@@ -81,7 +95,9 @@ function buildMysql(cb) {
       '-C',
       MYSQL_BUILD_PATH,
       'configure',
-      '--msvs_version=2015'
+      `--msvs_version=${options.msvs_version}`,
+      '--',
+      `-Dmysql_home="${options.mysql_home}"`
     ], {
       'shell': true});
 
@@ -103,7 +119,7 @@ function buildMysql(cb) {
       '-C',
       MYSQL_BUILD_PATH,
       'build',
-      '--msvs_version=2015'
+      `--msvs_version=${options.msvs_version}`,
     ], {
       'shell': true});
 
@@ -114,7 +130,6 @@ function buildMysql(cb) {
         cb('exit with ' + code);
         return ;
       }
-      cb();
-    });
-}
+      cb();});
+  }
 }

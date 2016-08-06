@@ -12,31 +12,35 @@ Requirements
 
 * node 5+
 * npm
+* node-gyp supports
+* libmysqlclient
 
 
 Build
 ---
 
-### 1. Install Tools
+### 1. Install Tools And Common Depdencies
 
 ```
 npm install typescript gulp-cli tsd -g
-```
 
-### 2. Install dependencies
-
-```
 npm install
-```
-
-### 3. Install typings
-
-```
 tsd install
 ```
 
-### 4. Build
+### 2. Build MySQL SDK
+
+(Currently only build on windows supported)
+* First, Check your system has `node-gyp` supports
+* Then, check your system has `libmysqlclient` library
+
+Run gulp to build
+```
+gulp build-mysql --msvs_version=2015 --mysql_home="C:/mysql5.7"
+```
+
+### 3. Compile Javascript and Static Contents
 
 ```
-gulp compile
+gulp build-ts
 ```
