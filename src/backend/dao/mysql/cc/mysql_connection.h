@@ -8,16 +8,18 @@
 #ifndef _MYSQL_CONNECTION_H
 #define _MYSQL_CONNECTION_H 1
 
+#include "./mysql_native.h"
+
 #include <mysql.h>
 
+#include <v8.h>
 #include <node.h>
-#include <node_object_wrap.h>
 
 
 namespace mysqlnative {
 
 
-class MySQLConnection : public node::ObjectWrap {
+class MySQLConnection : public Nan::ObjectWrap {
   public:
     static void Init(v8::Local<v8::Object> exports);
   
@@ -25,11 +27,19 @@ class MySQLConnection : public node::ObjectWrap {
     explicit MySQLConnection();
     ~MySQLConnection();
 
-    static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
-    static v8::Persistent<v8::Function> constructor;
+    static Nan::Persistent<v8::Function> constructor;
 
-    static void Connect(const v8::FunctionCallbackInfo<v8::Value>& args);
-    static void Error(const v8::FunctionCallbackInfo<v8::Value>& args);
+
+    static NAN_METHOD(New);
+
+    static NAN_METHOD(Connect);
+    static NAN_METHOD(Close);
+
+    static NAN_METHOD(AutoCommit);
+    static NAN_METHOD(Commit);
+    static NAN_METHOD(Rollback);
+
+    static NAN_METHOD(Error);
 
     MYSQL* conn;
 };

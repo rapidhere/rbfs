@@ -3,9 +3,9 @@
  *
  * Author: rapidhere@gmail.com
  */
-#include <node.h>
-
 #include "./mysql_connection.h"
+
+#include <node.h>
 
 
 namespace mysqlnative {

@@ -13,7 +13,7 @@
 namespace mysqlnative {
 
 
-v8::Persistent<v8::Function> MySQLConnection::constructor;
+Nan::Persistent<v8::Function> MySQLConnection::constructor;
 
 MySQLConnection::MySQLConnection() {
   conn = NULL;
@@ -24,94 +24,124 @@ MySQLConnection::~MySQLConnection() {
 }
 
 void MySQLConnection::Init(v8::Local<v8::Object> exports) {
-  v8::Isolate* isolate = exports->GetIsolate();
+  NAN_SCOPE
 
   // constructor template
-  v8::Local<v8::FunctionTemplate> tpl = v8::FunctionTemplate::New(isolate, New);
-  tpl->SetClassName(v8::String::NewFromUtf8(isolate, "MySQLConnection"));
+  v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
+  tpl->SetClassName(Nan::NewString("MySQLConnection"));
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
   // prototypes
-  NODE_SET_PROTOTYPE_METHOD(tpl, "connect", Connect);
-  NODE_SET_PROTOTYPE_METHOD(tpl, "_error", Error);
+  Nan::SetPrototypeMethod(tpl, "connect", Connect);
+  Nan::SetPrototypeMethod(tpl, "_error", Error);
+  Nan::SetPrototypeMethod(tpl, "_close", Close);
+  Nan::SetPrototypeMethod(tpl, "autoCommit", AutoCommit);
+  Nan::SetPrototypeMethod(tpl, "commit", Commit);
+  Nan::SetPrototypeMethod(tpl, "rollback", Rollback);
 
-  constructor.Reset(isolate, tpl->GetFunction());
+  constructor.Reset(tpl->GetFunction());
 
   // exports
-  exports->Set(v8::String::NewFromUtf8(isolate, "MySQLConnection"),
-    tpl->GetFunction());
+  exports->Set(Nan::NewString("MySQLConnection"), tpl->GetFunction());
 }
 
+NAN_METHOD(MySQLConnection::New) {
+  NAN_SCOPE
 
-void MySQLConnection::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::Isolate* isolate = args.GetIsolate();
-
-  if(args.IsConstructCall()) {
+  if(info.IsConstructCall()) {
     MySQLConnection* conn = new MySQLConnection();
-    conn->Wrap(args.This());
-    args.GetReturnValue().Set(args.This());
+    conn->Wrap(info.This());
+    info.GetReturnValue().Set(info.This());
   } else {
     // Not Support
-    args.GetReturnValue().Set(v8::Number::New(isolate, -1));
+    Nan::ThrowTypeError("Only can call with constructor");
   }
 }
 
-void MySQLConnection::Connect(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::Isolate* isolate = args.GetIsolate();
-  MySQLConnection* myconn = node::ObjectWrap::Unwrap<MySQLConnection>(args.Holder());
+NAN_METHOD(MySQLConnection::Connect) {
+  NAN_SCOPE
+  MySQLConnection* myconn = Nan::ObjectWrap::Unwrap<MySQLConnection>(info.Holder());
 
-  // get connection arguments
-  if(args.Length() < 7) {
-    isolate->ThrowException(v8::Exception::TypeError(
-      v8::String::NewFromUtf8(isolate, "Wrong arguments")));
-    return ;
-  }
-
-  const std::string host = ObjectToStdString(args[0]->ToString()),
-    user = ObjectToStdString(args[1]->ToString()),
-    passwd = ObjectToStdString(args[2]->ToString()),
-    db = ObjectToStdString(args[3]->ToString()),
-    unix_socket = ObjectToStdString(args[5]->ToString());
-  int port = (int)(args[4]->NumberValue());
-  unsigned long flags = (unsigned long)(args[6]->NumberValue());
+  // Arguments check will be done in js level
+  const v8::String::Utf8Value 
+    host(info[0]->ToString()),
+    user(info[1]->ToString()),
+    passwd(info[2]->ToString()),
+    db(info[3]->ToString()),
+    unix_socket(info[5]->ToString());
+  int port = (int)(info[4]->NumberValue());
+  unsigned long flags = (unsigned long)(info[6]->NumberValue());
 
   // Already connected, do nothing
   if(myconn->conn) {
-    args.GetReturnValue().Set(v8::True(isolate));
+    info.GetReturnValue().Set(true);
   } else {
     myconn->conn = mysql_init(NULL);
 
     if(! myconn->conn) {
-      args.GetReturnValue().Set(v8::False(isolate));
+      info.GetReturnValue().Set(false);
       return;
     }
 
     bool connectResult = !!mysql_real_connect(
       myconn->conn,
-      host.c_str(),
-      user.c_str(),
-      passwd.c_str(),
-      db.c_str(),
+      *host,
+      *user,
+      *passwd,
+      *db,
       port,
-      unix_socket.c_str(),
+      *unix_socket,
       flags);
     
-    if(connectResult) {
-      args.GetReturnValue().Set(v8::True(isolate));
-    } else {
-      args.GetReturnValue().Set(v8::False(isolate));
-    }
+    info.GetReturnValue().Set(connectResult);
   }
 }
 
-void MySQLConnection::Error(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::Isolate* isolate = args.GetIsolate();
-  MySQLConnection* myconn = node::ObjectWrap::Unwrap<MySQLConnection>(args.Holder());
+NAN_METHOD(MySQLConnection::AutoCommit) {
+  NAN_SCOPE
+  MySQLConnection* myconn = Nan::ObjectWrap::Unwrap<MySQLConnection>(info.Holder());
+
+  // Arguments check will be done in js level
+  bool autoCommitFlag = info[0]->BooleanValue();
+
+  // will not check connection state
+  bool result = !mysql_autocommit(myconn->conn, autoCommitFlag);
+  info.GetReturnValue().Set(result);
+}
+
+NAN_METHOD(MySQLConnection::Close) {
+  NAN_SCOPE
+  MySQLConnection* myconn = Nan::ObjectWrap::Unwrap<MySQLConnection>(info.Holder());
+
+  mysql_close(myconn->conn);
+
+  info.GetReturnValue().Set(true);
+}
+
+NAN_METHOD(MySQLConnection::Commit) {
+  NAN_SCOPE
+  MySQLConnection* myconn = Nan::ObjectWrap::Unwrap<MySQLConnection>(info.Holder());
+
+  bool result = !mysql_commit(myconn->conn);
+  info.GetReturnValue().Set(result);
+}
+
+NAN_METHOD(MySQLConnection::Rollback) {
+  NAN_SCOPE
+  MySQLConnection* myconn = Nan::ObjectWrap::Unwrap<MySQLConnection>(info.Holder());
+
+  bool result = !mysql_rollback(myconn->conn);
+  info.GetReturnValue().Set(result);
+}
+
+NAN_METHOD(MySQLConnection::Error) {
+  NAN_SCOPE
+  MySQLConnection* myconn = Nan::ObjectWrap::Unwrap<MySQLConnection>(info.Holder());
 
   if(myconn->conn) {
-    args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, mysql_error(myconn->conn)));
+    info.GetReturnValue().Set(Nan::NewString(mysql_error(myconn->conn)));
   } else {
-    args.GetReturnValue().Set(v8::Null(isolate));
+    info.GetReturnValue().SetNull();
   }
 }
 

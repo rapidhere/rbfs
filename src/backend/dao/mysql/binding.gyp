@@ -4,8 +4,11 @@
       'target_name': 'mysql_native',
       'sources': [
         'cc/mysql_native.cc',
-        'cc/mysql_connection.cc',
-        'cc/utils.cc'],
+        'cc/mysql_connection.cc'],
+      
+      'include_dirs': [
+        "<!(node -e \"require('nan')\")"
+      ],
 
       'conditions': [
         # Windows Compile Settings

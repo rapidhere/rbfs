@@ -1,6 +1,17 @@
-import { RbfsDatabaseException, DatabaseConnectionException } from '../../core/exception';
+/**
+ * Unsafe Mysql Module wrapper
+ * 
+ * Author: rapidhere@gmail.com
+ */
+import {
+  RbfsDatabaseException,
+  DatabaseConnectionException,
+  DatabaseNotConnected,
+  DatabaseTransactionError
+} from '../../core/exception';
 
 const mysqlNative = require('./build/Release/mysql_native');
+
 
 interface MySqlConnectionArgument {
   username: string,
@@ -26,6 +37,9 @@ export class MySqlConnection {
     if(this.connected)
       return ;
 
+    if(! this.unsafeConnection)
+      this.unsafeConnection = new mysqlNative.MySQLConnection();
+
     arg.hostname = arg.hostname || 'localhost';
     arg.port = parseInt('' + arg.port) || 3306;
     arg.socket_file = arg.socket_file || '';
@@ -43,11 +57,46 @@ export class MySqlConnection {
     if(!this.connected) {
       throw new DatabaseConnectionException(
         `Failed to connect to mysql: ${arg.db}-${arg.username}@${arg.hostname}:${arg.port}:\n` +
-        `    ${this.lastMysqlError}\n`)
+        `    ${this.lastMySqlError}\n`)
     }
   }
 
-  get lastMysqlError(): string {
+  close(): void {
+    this.unsafe._close();
+    this.unsafeConnection = null;
+    this.connected = false;
+  }
+
+  commit(): void {
+    if(! this.unsafe.commit()) {
+      throw new DatabaseTransactionError(
+        'Transaction commit failed: ' + this.lastMySqlError);
+    }
+  }
+
+  rollback(): void {
+    if(! this.unsafe.rollback()) {
+      throw new DatabaseTransactionError(
+        'Transaction rollback failed: ' + this.lastMySqlError);
+    }
+  }
+
+  set autoCommit(flag: boolean) {
+    if(! this.unsafe.autoCommit(flag)) {
+      throw new RbfsDatabaseException(
+        'Set auto commit failed: ' + this.lastMySqlError);
+    }
+  }
+  
+  get lastMySqlError(): string {
     return this.unsafeConnection._error();
+  }
+
+  private get unsafe() {
+    if(!this.connected) {
+      throw new DatabaseNotConnected();
+    }
+
+    return this.unsafeConnection;
   }
 };

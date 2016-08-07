@@ -6,6 +6,7 @@ const fs = require('fs');
 const spawn = require('child_process').spawn;
 const del = require('del');
 const minimist = require('minimist');
+const iconv = require('iconv-lite');
 
 gulp.task('build-ts', compile);
 gulp.task('build-static', copy);
@@ -73,7 +74,7 @@ function startServer() {
 
 function writeOutput(data) {
   // TODO: 支持gbk
-  fs.write(1, data.toString());
+  fs.write(1, iconv.decode(data, 'utf-8'));
 }
 
 function clean() {
@@ -130,6 +131,7 @@ function buildMysql(cb) {
         cb('exit with ' + code);
         return ;
       }
-      cb();});
+      cb();
+    });
   }
 }
