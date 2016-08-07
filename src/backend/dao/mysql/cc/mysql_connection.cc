@@ -38,6 +38,7 @@ void MySQLConnection::Init(v8::Local<v8::Object> exports) {
   Nan::SetPrototypeMethod(tpl, "autoCommit", AutoCommit);
   Nan::SetPrototypeMethod(tpl, "commit", Commit);
   Nan::SetPrototypeMethod(tpl, "rollback", Rollback);
+  Nan::SetPrototypeMethod(tpl, "query", Query);
 
   constructor.Reset(tpl->GetFunction());
 
@@ -143,6 +144,59 @@ NAN_METHOD(MySQLConnection::Error) {
   } else {
     info.GetReturnValue().SetNull();
   }
+}
+
+
+class QueryWorker : public Nan::AsyncWorker {
+  public:
+    QueryWorker(Nan::Callback* callback, MYSQL* conn, const char* statement, unsigned int length)
+      : Nan::AsyncWorker(callback) {
+        this->conn = conn;
+        this->length = length;
+
+        this->statement = new char[length];
+        memcpy(this->statement, statement, length);
+      }
+    
+    ~QueryWorker() {
+      if(statement) {
+        delete[] statement;
+      }
+    }
+
+    void Execute() {
+      result = !mysql_real_query(conn, statement, length);
+    }
+
+    void HandleOkCallback() {
+      NAN_SCOPE
+
+      v8::Local<v8::Value> argv[] = {
+        Nan::Null(),
+        Nan::New(result)
+      };
+
+      callback->Call(2, argv);
+    }
+
+  private:
+    char* statement;
+    MYSQL* conn;
+    unsigned int length;
+    bool result; 
+};
+
+NAN_METHOD(MySQLConnection::Query) {
+  NAN_SCOPE
+  MySQLConnection* myconn = Nan::ObjectWrap::Unwrap<MySQLConnection>(info.Holder());
+
+  // get arguments
+  v8::String::Utf8Value statement(info[0]->ToString());
+  unsigned int length = (unsigned int)(info[1]->NumberValue());
+  Nan::Callback* callback = new Nan::Callback(info[2].As<v8::Function>());
+
+  // execute async
+  Nan::AsyncQueueWorker(new QueryWorker(callback, myconn->conn, *statement, length));
 }
 
 }  // namespace mysqlnative

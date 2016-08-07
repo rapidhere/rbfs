@@ -41,6 +41,8 @@ class MySQLConnection : public Nan::ObjectWrap {
 
     static NAN_METHOD(Error);
 
+    static NAN_METHOD(Query);
+
     MYSQL* conn;
 };
 

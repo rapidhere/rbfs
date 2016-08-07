@@ -24,6 +24,9 @@ interface MySqlConnectionArgument {
   flags?: number
 }
 
+interface QueryCallback {
+  (err: Error, result: boolean): void
+}
 
 export class MySqlConnection { 
   private unsafeConnection: any;
@@ -79,6 +82,10 @@ export class MySqlConnection {
       throw new DatabaseTransactionError(
         'Transaction rollback failed: ' + this.lastMySqlError);
     }
+  }
+
+  query(statement: string, callback: QueryCallback): void {
+    this.unsafe.query(statement, statement.length, callback);
   }
 
   set autoCommit(flag: boolean) {
