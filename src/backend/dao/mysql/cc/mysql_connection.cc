@@ -167,8 +167,8 @@ class QueryWorker : public Nan::AsyncWorker {
     void Execute() {
       result = !mysql_real_query(conn, statement, length);
     }
-
-    void HandleOkCallback() {
+  
+    virtual void HandleOKCallback() {
       NAN_SCOPE
 
       v8::Local<v8::Value> argv[] = {
